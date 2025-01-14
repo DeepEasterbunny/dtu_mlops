@@ -1,9 +1,5 @@
 [core]
     remote = remote_storage
-['remote "storage"']
-    url = gdrive://1c84tQVpq0Rtis4TGwQdbtHmSPkJ7AOS2
-    gdrive_client_id = 218214604737-uevg70dcqqdggki0vbef637gj2fqcs0g.apps.googleusercontent.com
-    gdrive_client_secret = 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
 ['remote "remote_storage"']
     url = gs://rita-sucks
     version_aware = true
