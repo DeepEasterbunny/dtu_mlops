@@ -1,0 +1,21 @@
+steps:
+# - name: python
+#   entrypoint: pip
+#   args: ["install", "-r", "requirements.txt", "--user"]
+
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Build container image'
+  args: [
+    'build',
+    '.',
+    '-t',
+    'europe-west1-docker.pkg.dev/mlops-447114/my-first-registry/my-image',
+    '-f',
+    'cloud.dockerfile'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push container image'
+  args: [
+    'push',
+    'europe-west1-docker.pkg.dev/mlops-447114/my-first-registry/my-image'
+  ]
