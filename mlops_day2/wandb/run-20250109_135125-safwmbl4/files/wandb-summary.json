@@ -1,0 +1,1 @@
+{"accuracy": 0.10419999808073044, "loss": 2168.8349220752716, "_timestamp": 1736427445.2158897, "_runtime": 357.4343936443329, "_step": 15, "Image": {"_type": "plotly-file", "sha256": "78b5ad90e86d9b4a03409150d43f54fbe5d65f8a0b2b75a2c61d708a9165bc0b", "size": 10125, "path": "media/plotly/Image_15_78b5ad90e86d9b4a0340.plotly.json"}, "_wandb": {"runtime": 356}}

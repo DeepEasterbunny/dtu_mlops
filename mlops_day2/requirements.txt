@@ -1,0 +1,7 @@
+dvc==3.58.0
+invoke==2.2.0
+matplotlib==3.10.0
+PyDrive2==1.21.3
+scikit_learn==1.6.0
+torch==2.4.0
+typer==0.15.1

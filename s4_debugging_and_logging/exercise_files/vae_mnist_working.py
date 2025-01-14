@@ -5,11 +5,18 @@ A simple implementation of Gaussian MLP Encoder and Decoder trained on MNIST
 
 import torch
 import torch.nn as nn
+import torchvision
+
 import torchvision.transforms as transforms
 from torch.optim import Adam
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from torchvision.datasets import MNIST
 from torchvision.utils import save_image
+
+
+from torch.profiler import profile, ProfilerActivity, tensorboard_trace_handler
+import os
+
 
 # Model Hyperparameters
 dataset_path = "datasets"
@@ -22,144 +29,171 @@ latent_dim = 20
 lr = 1e-3
 epochs = 5
 
-
+with profile(activities=[ProfilerActivity.CPU], profile_memory = True, record_shapes=True, on_trace_ready=tensorboard_trace_handler("./log/vae")) as prof:
 # Data loading
-mnist_transform = transforms.Compose([transforms.ToTensor()])
+    mnist_transform = transforms.Compose([transforms.ToTensor()])
 
-train_dataset = MNIST(dataset_path, transform=mnist_transform, train=True, download=True)
-test_dataset = MNIST(dataset_path, transform=mnist_transform, train=False, download=True)
+    train_dataset = MNIST(dataset_path, transform=mnist_transform, train=True, download=True)
+    test_dataset = MNIST(dataset_path, transform=mnist_transform, train=False, download=True)
 
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
-
-
-class Encoder(nn.Module):
-    """Gaussian MLP Encoder."""
-
-    def __init__(self, input_dim, hidden_dim, latent_dim) -> None:
-        super().__init__()
-
-        self.FC_input = nn.Linear(input_dim, hidden_dim)
-        self.FC_mean = nn.Linear(hidden_dim, latent_dim)
-        self.FC_var = nn.Linear(hidden_dim, latent_dim)
-        self.training = True
-
-    def forward(self, x):
-        """Forward pass."""
-        h_ = torch.relu(self.FC_input(x))
-        mean = self.FC_mean(h_)
-        log_var = self.FC_var(h_)
-
-        std = torch.exp(0.5 * log_var)
-        z = self.reparameterization(mean, std)
-
-        return z, mean, log_var
-
-    def reparameterization(
-        self,
-        mean,
-        std,
-    ):
-        """Reparameterization trick."""
-        epsilon = torch.randn_like(std)
-
-        return mean + std * epsilon
+    train_data = train_dataset.data.float() / 255.0
+    test_data = test_dataset.data.float() / 255.0
 
 
-class Decoder(nn.Module):
-    """Bernoulli MLP Decoder."""
+    # Save preprocessed data
+    preprocessed_path = os.path.join(dataset_path, "MNIST", "preprocessed")
+    os.makedirs(preprocessed_path, exist_ok=True)
 
-    def __init__(self, latent_dim, hidden_dim, output_dim) -> None:
-        super().__init__()
-        self.FC_hidden = nn.Linear(latent_dim, hidden_dim)
-        self.FC_output = nn.Linear(hidden_dim, output_dim)
+    train_tensor_path = os.path.join(preprocessed_path, "train.pt")
+    test_tensor_path = os.path.join(preprocessed_path, "test.pt")
 
-    def forward(self, x):
-        """Forward pass."""
-        h = torch.relu(self.FC_hidden(x))
-        return torch.sigmoid(self.FC_output(h))
+    torch.save((train_data,  train_dataset.targets), train_tensor_path)
+    torch.save((test_data, test_dataset.targets), test_tensor_path)
 
+    train_data, train_targets = torch.load(train_tensor_path)
+    test_data, test_targets = torch.load(test_tensor_path)
 
-class Model(nn.Module):
-    """VAE Model."""
-
-    def __init__(self, encoder, decoder) -> None:
-        super().__init__()
-        self.encoder = encoder
-        self.decoder = decoder
-
-    def forward(self, x):
-        """Forward pass."""
-        z, mean, log_var = self.encoder(x)
-        x_hat = self.decoder(z)
-
-        return x_hat, mean, log_var
+    train_dataset = TensorDataset(train_data, train_targets)
+    print("Trainset created successfully")
+    test_dataset = TensorDataset(test_data, test_targets)
+    print("Testset created successfully")
 
 
-encoder = Encoder(input_dim=x_dim, hidden_dim=hidden_dim, latent_dim=latent_dim)
-decoder = Decoder(latent_dim=latent_dim, hidden_dim=hidden_dim, output_dim=x_dim)
 
-model = Model(encoder=encoder, decoder=decoder).to(DEVICE)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
-
-BCE_loss = nn.BCELoss()
+    print("DataLoaders created successfully")
 
 
-def loss_function(x, x_hat, mean, log_var):
-    """Reconstruction + KL divergence losses summed over all elements and batch."""
-    reproduction_loss = nn.functional.binary_cross_entropy(x_hat, x, reduction="sum")
-    kld = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
-    return reproduction_loss + kld
+    class Encoder(nn.Module):
+        """Gaussian MLP Encoder."""
+
+        def __init__(self, input_dim, hidden_dim, latent_dim) -> None:
+            super().__init__()
+
+            self.FC_input = nn.Linear(input_dim, hidden_dim)
+            self.FC_mean = nn.Linear(hidden_dim, latent_dim)
+            self.FC_var = nn.Linear(hidden_dim, latent_dim)
+            self.training = True
+
+        def forward(self, x):
+            """Forward pass."""
+            h_ = torch.relu(self.FC_input(x))
+            mean = self.FC_mean(h_)
+            log_var = self.FC_var(h_)
+
+            std = torch.exp(0.5 * log_var)
+            z = self.reparameterization(mean, std)
+
+            return z, mean, log_var
+
+        def reparameterization(
+            self,
+            mean,
+            std,
+        ):
+            """Reparameterization trick."""
+            epsilon = torch.randn_like(std)
+
+            return mean + std * epsilon
 
 
-optimizer = Adam(model.parameters(), lr=lr)
+    class Decoder(nn.Module):
+        """Bernoulli MLP Decoder."""
+
+        def __init__(self, latent_dim, hidden_dim, output_dim) -> None:
+            super().__init__()
+            self.FC_hidden = nn.Linear(latent_dim, hidden_dim)
+            self.FC_output = nn.Linear(hidden_dim, output_dim)
+
+        def forward(self, x):
+            """Forward pass."""
+            h = torch.relu(self.FC_hidden(x))
+            return torch.sigmoid(self.FC_output(h))
 
 
-print("Start training VAE...")
-model.train()
-for epoch in range(epochs):
-    overall_loss = 0
-    for batch_idx, (x, _) in enumerate(train_loader):
-        if batch_idx % 100 == 0:
-            print(batch_idx)
-        x = x.view(batch_size, x_dim)
-        x = x.to(DEVICE)
+    class Model(nn.Module):
+        """VAE Model."""
 
-        optimizer.zero_grad()
+        def __init__(self, encoder, decoder) -> None:
+            super().__init__()
+            self.encoder = encoder
+            self.decoder = decoder
 
-        x_hat, mean, log_var = model(x)
-        loss = loss_function(x, x_hat, mean, log_var)
+        def forward(self, x):
+            """Forward pass."""
+            z, mean, log_var = self.encoder(x)
+            x_hat = self.decoder(z)
 
-        overall_loss += loss.item()
+            return x_hat, mean, log_var
 
-        loss.backward()
-        optimizer.step()
-    print(
-        "\tEpoch",
-        epoch + 1,
-        "complete!",
-        "\tAverage Loss: ",
-        overall_loss / (batch_idx * batch_size),
-    )
-print("Finish!!")
 
-# Generate reconstructions
-model.eval()
-with torch.no_grad():
-    for batch_idx, (x, _) in enumerate(test_loader):
-        if batch_idx % 100 == 0:
-            print(batch_idx)
-        x = x.view(batch_size, x_dim)
-        x = x.to(DEVICE)
-        x_hat, _, _ = model(x)
-        break
+    encoder = Encoder(input_dim=x_dim, hidden_dim=hidden_dim, latent_dim=latent_dim)
+    decoder = Decoder(latent_dim=latent_dim, hidden_dim=hidden_dim, output_dim=x_dim)
 
-save_image(x.view(batch_size, 1, 28, 28), "orig_data.png")
-save_image(x_hat.view(batch_size, 1, 28, 28), "reconstructions.png")
+    model = Model(encoder=encoder, decoder=decoder).to(DEVICE)
 
-# Generate samples
-with torch.no_grad():
-    noise = torch.randn(batch_size, latent_dim).to(DEVICE)
-    generated_images = decoder(noise)
 
-save_image(generated_images.view(batch_size, 1, 28, 28), "generated_sample.png")
+    BCE_loss = nn.BCELoss()
+
+
+    def loss_function(x, x_hat, mean, log_var):
+        """Reconstruction + KL divergence losses summed over all elements and batch."""
+        reproduction_loss = nn.functional.binary_cross_entropy(x_hat, x, reduction="sum")
+        kld = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
+        return reproduction_loss + kld
+
+
+    optimizer = Adam(model.parameters(), lr=lr)
+
+
+    print("Start training VAE...")
+    model.train()
+    for epoch in range(epochs):
+        overall_loss = 0
+        for batch_idx, (x, _) in enumerate(train_loader):
+            if batch_idx % 100 == 0:
+                print(batch_idx)
+            x = x.view(batch_size, x_dim)
+            x = x.to(DEVICE)
+
+            optimizer.zero_grad()
+
+            x_hat, mean, log_var = model(x)
+            loss = loss_function(x, x_hat, mean, log_var)
+
+            overall_loss += loss.item()
+
+            loss.backward()
+            optimizer.step()
+        print(
+            "\tEpoch",
+            epoch + 1,
+            "complete!",
+            "\tAverage Loss: ",
+            overall_loss / (batch_idx * batch_size),
+        )
+    print("Finish!!")
+
+    # Generate reconstructions
+    model.eval()
+    with torch.no_grad():
+        for batch_idx, (x, _) in enumerate(test_loader):
+            if batch_idx % 100 == 0:
+                print(batch_idx)
+            x = x.view(batch_size, x_dim)
+            x = x.to(DEVICE)
+            x_hat, _, _ = model(x)
+            break
+
+    save_image(x.view(batch_size, 1, 28, 28), "orig_data.png")
+    save_image(x_hat.view(batch_size, 1, 28, 28), "reconstructions.png")
+
+    # Generate samples
+    with torch.no_grad():
+        noise = torch.randn(batch_size, latent_dim).to(DEVICE)
+        generated_images = decoder(noise)
+
+    save_image(generated_images.view(batch_size, 1, 28, 28), "generated_sample.png")
+prof.export_chrome_trace("trace_vae.json")

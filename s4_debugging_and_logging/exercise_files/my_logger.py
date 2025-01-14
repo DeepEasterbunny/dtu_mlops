@@ -1,5 +1,11 @@
 from loguru import logger
 
+logger.remove()
+logger.add(lambda msg: print(msg, end=''), level="WARNING")
+
+log_path = "my_log.log"
+logger.add(log_path, level = "INFO", rotation = "100 MB")
+
 logger.debug("Used for debugging your code.")
 logger.info("Informative messages from your code.")
 logger.warning("Everything works but there is something to be aware of.")
