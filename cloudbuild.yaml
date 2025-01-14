@@ -11,7 +11,7 @@ steps:
     '-t',
     'europe-west1-docker.pkg.dev/mlops-447114/my-first-registry/my-image',
     '-f',
-    'cloud.dockerfile'
+    'mlops_day2/google-cloud/cloud.dockerfile'
   ]
 - name: 'gcr.io/cloud-builders/docker'
   id: 'Push container image'
