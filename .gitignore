@@ -170,6 +170,6 @@ corruptmnist_v2/
 # vscode
 .vscode/
 
-mlops_day2/data
-s4_debugging_and_logging/datasets
-s4_debugging_and_logging/exercise_files/datasets
+mlops_day2/data/
+s4_debugging_and_logging/datasets/
+s4_debugging_and_logging/exercise_files/datasets/
