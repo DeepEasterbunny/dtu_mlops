@@ -9,10 +9,10 @@ import wandb
 from PIL import Image
 
 def get_data(data_folder: Path = Path('data/processed')):
-    data = torch.load('/gcs/rita-sucks/data.pt')
-    # writing to a bucket using mounted file system
-    torch.save(data, '/gcs/rita-sucks/data.pt')
-    return data
+    images = torch.load('/gcs/rita-sucks/processed/train_images.pt')
+    targets = torch.load('/gcs/rita-sucks/processed/train_images.pt')
+    dataset = TensorDataset(images, targets)
+    return dataset
 
 def train_model(lr:float = 1e-3, epochs:int = 7, data_folder: Path = Path('data/processed')):
     dataset = get_data(data_folder)
