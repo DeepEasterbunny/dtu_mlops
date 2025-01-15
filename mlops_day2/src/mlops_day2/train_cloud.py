@@ -7,15 +7,18 @@ from pathlib import Path
 from torch.utils.data import DataLoader, TensorDataset
 import wandb
 from PIL import Image
+import os
 
-def get_data(data_folder: Path = Path('data/processed')):
+def get_data():   
+    wd = os.getcwd()
+    os.listdir(wd)
     images = torch.load('/gcs/rita-sucks/processed/train_images.pt')
     targets = torch.load('/gcs/rita-sucks/processed/train_images.pt')
     dataset = TensorDataset(images, targets)
     return dataset
 
-def train_model(lr:float = 1e-3, epochs:int = 7, data_folder: Path = Path('data/processed')):
-    dataset = get_data(data_folder)
+def train_model(lr:float = 1e-3, epochs:int = 10, data_folder: Path = Path('data/processed')):
+    dataset = get_data()
     print("Training data loaded succesfully")
     model  = MyAwesomeModel()
     print("Model loaded succesfully")
