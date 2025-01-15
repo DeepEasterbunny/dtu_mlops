@@ -5,7 +5,7 @@ import warnings
 import matplotlib.pyplot as plt
 from pathlib import Path
 from torch.utils.data import DataLoader, TensorDataset
-import wandb
+# import wandb
 from PIL import Image
 import os
 
@@ -34,15 +34,15 @@ def train_model(lr:float = 1e-3, epochs:int = 10, data_folder: Path = Path('data
     losses = []
     accs = []
 
-    run = wandb.init(
-    project="MLOps",
-    name="Logging a model",
-    config={
-        "learning_rate": lr,
-        "epochs": epochs,
-        "batch_size":batch_size
-    },
-    )
+    # run = wandb.init(
+    # project="MLOps",
+    # name="Logging a model",
+    # config={
+    #     "learning_rate": lr,
+    #     "epochs": epochs,
+    #     "batch_size":batch_size
+    # },
+    # )
     for _ in range(epochs):
         loss_in_epoch = 0
         items_checked = 0
@@ -65,7 +65,7 @@ def train_model(lr:float = 1e-3, epochs:int = 10, data_folder: Path = Path('data
         losses.append(loss_in_epoch)
         
         accs.append(accuracy / items_checked)
-        wandb.log({"accuracy": accuracy / items_checked, "loss": loss_in_epoch})
+        # wandb.log({"accuracy": accuracy / items_checked, "loss": loss_in_epoch})
     
 
     trained_path = "models"
@@ -74,14 +74,14 @@ def train_model(lr:float = 1e-3, epochs:int = 10, data_folder: Path = Path('data
     torch.save(model.state_dict(), tm)
     print(f"Saved model to {trained_path} as {trained_model_name}")
 
-    art = wandb.Artifact(
-        name = "CNN-model",
-        type = "model",
-        description = "My model",
-        metadata = dict(run.config)
-        )
-    art.add_file(local_path = tm, name = "A_trained_model")
-    art.save()
+    # art = wandb.Artifact(
+    #     name = "CNN-model",
+    #     type = "model",
+    #     description = "My model",
+    #     metadata = dict(run.config)
+    #     )
+    # art.add_file(local_path = tm, name = "A_trained_model")
+    # art.save()
 
     figs_folder = "reports/figures"
     fig_name = "train_curve.png"
@@ -109,7 +109,7 @@ def train_model(lr:float = 1e-3, epochs:int = 10, data_folder: Path = Path('data
     plt.savefig(f)
     print(f"Saved training figure to {figs_folder} as {fig_name}")
 
-    wandb.log({"Image": fig})
+    # wandb.log({"Image": fig})
     
     
 
