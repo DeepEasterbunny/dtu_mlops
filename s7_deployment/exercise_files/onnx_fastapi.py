@@ -1,6 +1,6 @@
 import numpy as np
 import onnxruntime
-from fastapi import FastAPI
+from lucas_MLOps.s7_deployment.exercise_files.fastapi import FastAPI
 
 app = FastAPI()
 

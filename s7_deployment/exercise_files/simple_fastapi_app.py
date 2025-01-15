@@ -1,5 +1,5 @@
+# from lucas_MLOps.s7_deployment.exercise_files.fastapi import FastAPI
 from fastapi import FastAPI
-
 app = FastAPI()
 
 

@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 import torch
-from fastapi import FastAPI, File, UploadFile
+from lucas_MLOps.s7_deployment.exercise_files.fastapi import FastAPI, File, UploadFile
 from PIL import Image
 from transformers import AutoTokenizer, VisionEncoderDecoderModel, ViTFeatureExtractor
 

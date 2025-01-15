@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y \
 RUN pip install fastapi
 RUN pip install pydantic
 RUN pip install uvicorn
+RUN pip install opencv-python
 
-COPY simple_fastapi_app.py simple_fastapi_app.py
+COPY main.py main.py
+COPY mail.json mail.json
 
-CMD exec uvicorn simple_fastapi_app:app --port 80 --host 0.0.0.0 --workers 1
+CMD exec uvicorn main:app --port 80 --host 0.0.0.0 --workers 1
