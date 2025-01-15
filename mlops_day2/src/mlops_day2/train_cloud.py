@@ -12,8 +12,9 @@ import os
 def get_data():   
     wd = os.getcwd()
     os.listdir(wd)
-    images = torch.load('/gcs/rita-sucks/processed/train_images.pt')
-    targets = torch.load('/gcs/rita-sucks/processed/train_images.pt')
+    # rita-sucks/data/processed
+    images = torch.load('/gcs/rita-sucks/data/processed/train_images.pt')
+    targets = torch.load('/gcs/rita-sucks/data/processed/train_targets.pt')
     dataset = TensorDataset(images, targets)
     return dataset
 
